@@ -14,6 +14,8 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@optimizely/cms-cli": "^2.2.0",
+    "@optimizely/cms-sdk": "^2.2.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
