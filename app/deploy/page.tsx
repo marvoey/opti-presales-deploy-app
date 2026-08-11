@@ -47,6 +47,14 @@ export default function DeployPage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [steps, setSteps] = useState<Array<{ label: string; done: boolean }>>([]);
+
+  function startStep(label: string) {
+    setSteps((prev) => [...prev, { label, done: false }]);
+  }
+  function completeStep() {
+    setSteps((prev) => prev.map((s, i) => (i === prev.length - 1 ? { ...s, done: true } : s)));
+  }
 
   useEffect(() => {
     fetch('/api/tags')
@@ -93,11 +101,13 @@ export default function DeployPage() {
 
     setSubmitting(true);
     setSubmitError(null);
+    setSteps([]);
 
     try {
       const fullBranchName = `${BRANCH_PREFIX}${branchName}`;
       const fullDomain = DEMO_BASE_DOMAIN ? `${branchName}.${DEMO_BASE_DOMAIN}` : '';
 
+      startStep('Creating GitHub branch');
       const branchRes = await fetch('/api/branches', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -112,9 +122,10 @@ export default function DeployPage() {
         throw new Error('Branch already exists — no deployment triggered.');
       }
       if (!branchRes.ok) throw new Error(branchData.error ?? 'Failed to create branch');
+      completeStep();
 
-      // Create the CMS entry point page and application for this demo
       if (fullDomain) {
+        startStep('Creating CMS application');
         const cmsRes = await fetch('/api/cms/setup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -129,9 +140,10 @@ export default function DeployPage() {
           const cmsData = await cmsRes.json();
           throw new Error(cmsData.error ?? 'Failed to set up CMS application');
         }
+        completeStep();
       }
 
-      // Set branch-scoped env vars in Vercel
+      startStep('Setting environment variables');
       const envOverrides: Record<string, string> = Object.fromEntries(
         Object.entries(envValues).filter(([, v]) => v.trim())
       );
@@ -147,6 +159,19 @@ export default function DeployPage() {
           throw new Error(envData.error ?? 'Failed to set environment variables');
         }
       }
+      completeStep();
+
+      startStep('Triggering deployment');
+      const deployRes = await fetch('/api/deployments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ branch: fullBranchName }),
+      });
+      if (!deployRes.ok) {
+        const deployData = await deployRes.json();
+        throw new Error(deployData.error ?? 'Failed to trigger deployment');
+      }
+      completeStep();
 
       router.push('/deployments');
     } catch (err) {
@@ -287,12 +312,34 @@ export default function DeployPage() {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
               </svg>
-              Creating branch…
+              Deploying…
             </span>
           ) : (
             'Create branch'
           )}
         </button>
+
+        {steps.length > 0 && (
+          <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 space-y-2">
+            {steps.map((step, i) => (
+              <div key={i} className="flex items-center gap-2.5 text-sm">
+                {step.done ? (
+                  <svg className="h-4 w-4 flex-shrink-0 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <svg className="h-4 w-4 flex-shrink-0 animate-spin text-blue-500" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                )}
+                <span className={step.done ? 'text-gray-400' : 'font-medium text-gray-700'}>
+                  {step.label}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </form>
     </div>
   );

@@ -121,6 +121,17 @@ export async function publishPage(token: string, key: string, version: string): 
   if (!res.ok) throw new Error(`Failed to publish page ${key}: ${res.status}`);
 }
 
+/** Deletes a content item by key. Used to clean up orphaned pages on partial failure. */
+export async function deletePage(token: string, key: string): Promise<void> {
+  const res = await fetch(`${CMS_API}/v1/content/${encodeURIComponent(key)}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  if (res.status === 404) return;
+  if (!res.ok) throw new Error(`Failed to delete page ${key}: ${res.status}`);
+}
+
 /** Deletes a CMS application by key. */
 export async function deleteApplication(token: string, key: string): Promise<void> {
   const res = await fetch(`${CMS_API}/v1/applications/${encodeURIComponent(key)}`, {

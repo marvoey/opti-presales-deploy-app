@@ -4,6 +4,7 @@ import {
   findApplicationByHostname,
   createPage,
   publishPage,
+  deletePage,
   createApplication,
 } from '@/lib/optimizely';
 
@@ -42,16 +43,22 @@ export async function POST(request: Request) {
       displayName,
     });
 
-    await publishPage(token, key, version);
-
-    const application = await createApplication(token, {
-      displayName,
-      type: 'website',
-      entryPoint: `cms://content/${key}`,
-      hosts: [{ authority: hostname, type: 'Primary', preferredUrlScheme: 'https' }],
-      usePreviewTokens: true,
-      useApplicationSpecificAssets: true,
-    });
+    // If anything after page creation fails, delete the page so retries start clean.
+    let application;
+    try {
+      await publishPage(token, key, version);
+      application = await createApplication(token, {
+        displayName,
+        type: 'website',
+        entryPoint: `cms://content/${key}`,
+        hosts: [{ authority: hostname, type: 'Primary', preferredUrlScheme: 'https' }],
+        usePreviewTokens: true,
+        useApplicationSpecificAssets: true,
+      });
+    } catch (err) {
+      await deletePage(token, key).catch(() => {});
+      throw err;
+    }
 
     return NextResponse.json({ application }, { status: 201 });
   } catch (err) {
