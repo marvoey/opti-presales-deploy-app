@@ -3,13 +3,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import StatusBadge from '@/components/StatusBadge';
-import type { VercelProject } from '@/lib/vercel';
-import type { GitHubRepo, GitHubBranch } from '@/lib/github';
+import type { VercelProject, DemoBranch } from '@/lib/vercel';
+import type { GitHubRepo } from '@/lib/github';
 
 export default function DashboardPage() {
   const [project, setProject] = useState<VercelProject | null>(null);
   const [repo, setRepo] = useState<GitHubRepo | null>(null);
-  const [branches, setBranches] = useState<GitHubBranch[]>([]);
+  const [branches, setBranches] = useState<DemoBranch[]>([]);
   const [deletingBranch, setDeletingBranch] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +65,6 @@ export default function DashboardPage() {
   }
 
   const latest = project?.latestDeployments?.[0];
-  const demoBranches = branches.filter((b) => b.name.startsWith('opti-presales-auto-'));
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -177,25 +176,45 @@ export default function DashboardPage() {
               </div>
             </div>
           )}
-          {demoBranches.length > 0 && (
+          {branches.length > 0 && (
             <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
               <p className="mb-4 text-xs font-medium uppercase tracking-wide text-gray-400">
-                Branches ({demoBranches.length})
+                Branches ({branches.length})
               </p>
               <ul className="divide-y divide-gray-100">
-                {demoBranches.map((b) => (
+                {branches.map((b) => (
                   <li key={b.name} className="flex items-center justify-between py-2.5 text-sm">
-                    <span className="font-mono text-gray-800">{b.name}</span>
+                    <div className="flex min-w-0 flex-col gap-1">
+                      <span className="font-mono text-gray-800">{b.name}</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {process.env.NEXT_PUBLIC_DEMO_BASE_DOMAIN && (
+                          <a
+                            href={`https://${b.name.slice('opti-presales-auto-'.length)}.${process.env.NEXT_PUBLIC_DEMO_BASE_DOMAIN}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200 hover:bg-blue-100"
+                          >
+                            Demo site ↗
+                          </a>
+                        )}
+                        {b.cmsUrl && (
+                          <a
+                            href={`${b.cmsUrl}/ui/cms`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center rounded-md bg-purple-50 px-2 py-0.5 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-200 hover:bg-purple-100"
+                          >
+                            CMS ↗
+                          </a>
+                        )}
+                      </div>
+                    </div>
                     <div className="flex items-center gap-2">
-                      {b.protected && (
-                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">
-                          protected
-                        </span>
-                      )}
+                      <StatusBadge state={b.state} />
                       <button
                         onClick={() => handleDeleteBranch(b.name)}
-                        disabled={!!deletingBranch || b.protected}
-                        title={b.protected ? 'Protected branch cannot be deleted' : `Delete ${b.name}`}
+                        disabled={!!deletingBranch}
+                        title={`Delete ${b.name}`}
                         className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         {deletingBranch === b.name ? (

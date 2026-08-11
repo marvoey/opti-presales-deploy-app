@@ -2,6 +2,7 @@
 // Re-run `node scripts/generate-nav.mjs` after adding or removing routes.
 export const navLinks = [
   { href: '/', label: 'Dashboard' },
+  { href: '/applications', label: 'Applications' },
   { href: '/deploy', label: 'Deploy' },
   { href: '/deployments', label: 'Deployments' },
 ] as const;

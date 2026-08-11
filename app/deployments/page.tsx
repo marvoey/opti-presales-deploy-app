@@ -5,6 +5,13 @@ import Link from 'next/link';
 import StatusBadge from '@/components/StatusBadge';
 import type { VercelDeployment } from '@/lib/vercel';
 
+const DEMO_BASE_DOMAIN = process.env.NEXT_PUBLIC_DEMO_BASE_DOMAIN ?? '';
+
+function siteDomain(branchRef: string | undefined): string | null {
+  if (!DEMO_BASE_DOMAIN || !branchRef?.startsWith('opti-presales-auto-')) return null;
+  return `${branchRef.slice('opti-presales-auto-'.length)}.${DEMO_BASE_DOMAIN}`;
+}
+
 function timeAgo(ms: number): string {
   const secs = Math.floor((Date.now() - ms) / 1000);
   if (secs < 60) return `${secs}s ago`;
@@ -24,7 +31,11 @@ export default function DeploymentsPage() {
       const res = await fetch('/api/deployments');
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Failed to load deployments');
-      setDeployments(data.deployments);
+      setDeployments(
+        (data.deployments as VercelDeployment[]).filter((d) =>
+          d.meta?.githubCommitRef?.startsWith('opti-presales-auto-')
+        )
+      );
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -95,11 +106,20 @@ export default function DeploymentsPage() {
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="text-xs text-gray-400">{timeAgo(d.created)}</p>
-                    {d.url && d.state === 'READY' && (
-                      <span className="mt-0.5 block truncate text-xs text-blue-600">
-                        {d.url}
-                      </span>
-                    )}
+                    {(() => {
+                      const domain = siteDomain(d.meta?.githubCommitRef);
+                      return domain ? (
+                        <a
+                          href={`https://${domain}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-1 inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200 hover:bg-blue-100"
+                        >
+                          Demo site ↗
+                        </a>
+                      ) : null;
+                    })()}
                   </div>
                 </Link>
               </li>

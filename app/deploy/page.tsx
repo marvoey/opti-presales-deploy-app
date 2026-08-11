@@ -18,6 +18,7 @@ const ENV_KEYS = [
 type EnvKey = typeof ENV_KEYS[number];
 
 const BRANCH_PREFIX = 'opti-presales-auto-';
+const DEMO_BASE_DOMAIN = process.env.NEXT_PUBLIC_DEMO_BASE_DOMAIN ?? '';
 
 function validateBranchName(name: string): string | null {
   if (!name) return 'Branch name is required.';
@@ -59,7 +60,8 @@ export default function DeployPage() {
           setSelectedTag(filtered[0].name);
         }
         setLoadingTags(false);
-      });
+      })
+      .catch(() => setLoadingTags(false));
 
     fetch('/api/defaults')
       .then((r) => r.json())
@@ -94,11 +96,16 @@ export default function DeployPage() {
 
     try {
       const fullBranchName = `${BRANCH_PREFIX}${branchName}`;
+      const fullDomain = DEMO_BASE_DOMAIN ? `${branchName}.${DEMO_BASE_DOMAIN}` : '';
 
       const branchRes = await fetch('/api/branches', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: fullBranchName, sha: tag.commit.sha }),
+        body: JSON.stringify({
+          name: fullBranchName,
+          sha: tag.commit.sha,
+          domain: fullDomain || undefined,
+        }),
       });
       const branchData = await branchRes.json();
       if (branchRes.status === 409) {
@@ -106,10 +113,29 @@ export default function DeployPage() {
       }
       if (!branchRes.ok) throw new Error(branchData.error ?? 'Failed to create branch');
 
+      // Create the CMS entry point page and application for this demo
+      if (fullDomain) {
+        const cmsRes = await fetch('/api/cms/setup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            clientId: envValues.OPTIMIZELY_CMS_CLIENT_ID,
+            clientSecret: envValues.OPTIMIZELY_CMS_CLIENT_SECRET,
+            displayName: fullBranchName,
+            hostname: fullDomain,
+          }),
+        });
+        if (!cmsRes.ok) {
+          const cmsData = await cmsRes.json();
+          throw new Error(cmsData.error ?? 'Failed to set up CMS application');
+        }
+      }
+
       // Set branch-scoped env vars in Vercel
-      const envOverrides = Object.fromEntries(
+      const envOverrides: Record<string, string> = Object.fromEntries(
         Object.entries(envValues).filter(([, v]) => v.trim())
       );
+      if (fullDomain) envOverrides['NEXT_PUBLIC_SITE_DOMAIN'] = fullDomain;
       if (Object.keys(envOverrides).length > 0) {
         const envRes = await fetch('/api/env', {
           method: 'POST',
@@ -122,7 +148,7 @@ export default function DeployPage() {
         }
       }
 
-      router.push('/');
+      router.push('/deployments');
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Unknown error');
       setSubmitting(false);
@@ -169,6 +195,14 @@ export default function DeployPage() {
           </div>
           {branchError && (
             <p className="mt-1.5 text-xs text-red-600">{branchError}</p>
+          )}
+          {!branchError && branchName && DEMO_BASE_DOMAIN && (
+            <p className="mt-1.5 text-xs text-gray-500">
+              Demo will be deployed to{' '}
+              <span className="font-mono font-medium text-gray-700">
+                {branchName}.{DEMO_BASE_DOMAIN}
+              </span>
+            </p>
           )}
         </div>
 
