@@ -8,8 +8,48 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Die Grotesk B (brand body face) → Inter as the standard grotesque substitute. */
+  --font-sans: var(--font-inter);
+  /* VC Nudge (brand display face) → Space Grotesk as the closest geometric substitute. */
+  --font-display: var(--font-space-grotesk);
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │  REBRAND HERE.  This is the whole colour theme for the site.          │
+   * │  The Tailwind `blue-*` scale is remapped, so chrome and blocks that   │
+   * │  use `bg-blue-900`, `text-blue-800`, etc. all reskin when you edit    │
+   * │  these hex values. blue-900/950 = dark bg; blue-800 = primary action. │
+   * └──────────────────────────────────────────────────────────────────────┘
+   * Optimizely brand green ramp — primary Good-to-go #3AB533, signature LFGreen #ABFF44.
+   * Dark anchors use Dark Fir (#08251A) and Mid Fir (#0D3A29) from the brand palette.
+   */
+  --color-blue-950: #08251a; /* Dark Fir — deepest bg (footer / dark hero) */
+  --color-blue-900: #0d3a29; /* Mid Fir — header bg */
+  --color-blue-800: #197050; /* Light Fir — primary actions (white text passes AA) */
+  --color-blue-700: #007b79; /* Dark Blue — tertiary teal */
+  --color-blue-600: #3ab533; /* Good-to-go — brand green */
+  --color-blue-500: #7ddd3d; /* Grass — mid green */
+  --color-blue-400: #91dbda; /* Light Blue — secondary */
+  --color-blue-300: #abff44; /* LFGreen — signature bright */
+  --color-blue-200: #d8e4cb; /* Neutral 4 */
+  --color-blue-100: #e4f0da; /* Neutral 3 */
+  --color-blue-50:  #eff6e9; /* Neutral 2 — lightest wash */
+
+  /* Named brand tokens for direct use in custom components. */
+  --color-brand:          #3ab533; /* Good-to-go green */
+  --color-brand-dark:     #0d3a29; /* Mid Fir */
+  --color-brand-bright:   #abff44; /* LFGreen — signature lime */
+  --color-brand-grass:    #7ddd3d; /* Grass */
+  --color-brand-teal:     #91dbda; /* Light Blue secondary */
+  --color-brand-pink:     #ff99b6; /* Light Pink tertiary */
+  --color-brand-dark-pink: #8f4764; /* Dark Pink tertiary */
+  --color-neutral-2:      #eff6e9;
+  --color-neutral-3:      #e4f0da;
+  --color-neutral-4:      #d8e4cb;
+  --color-neutral-5:      #c3ceaf;
+  --color-neutral-6:      #a1ac8d;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,5 +62,11 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
 }

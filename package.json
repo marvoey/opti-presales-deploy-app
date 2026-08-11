@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "node scripts/run-next.mjs dev",
-    "build": "next build",
+    "build": "node scripts/generate-nav.mjs && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "get-repo-id": "bash scripts/get-github-repo-id.sh",
+    "gen:nav": "node scripts/generate-nav.mjs"
   },
   "dependencies": {
     "next": "16.3.0",

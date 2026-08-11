@@ -37,7 +37,7 @@ Open `.env.local` and fill in:
 
 | Variable | Where to find it |
 |---|---|
-| `VERCEL_TOKEN` | [vercel.com/account/tokens](https://vercel.com/account/tokens) |
+| `OPTI_VERCEL_TOKEN` | [vercel.com/account/tokens](https://vercel.com/account/tokens) — must NOT be named `VERCEL_TOKEN` as Vercel injects its own system variable with that name |
 | `VERCEL_PROJECT_ID` | Vercel → Project Settings → General → Project ID |
 | `VERCEL_PROJECT_NAME` | The slug name of your Vercel project |
 | `VERCEL_TEAM_ID` | *(Optional)* Team Settings → General → Team ID |
