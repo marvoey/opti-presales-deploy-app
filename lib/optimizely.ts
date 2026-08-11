@@ -38,6 +38,7 @@ export type ApplicationCreate = {
   entryPoint: string;
   hosts?: ApplicationHost[];
   usePreviewTokens?: boolean;
+  useApplicationSpecificAssets?: boolean;
   previewUrlFormats?: Record<string, string>;
 };
 
