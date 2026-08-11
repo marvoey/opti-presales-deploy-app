@@ -11,6 +11,26 @@ function authHeaders() {
   };
 }
 
+// Vercel validates gitBranch against GitHub synchronously; the branch may not
+// be visible to Vercel immediately after creation. Retry on this specific error.
+async function withBranchRetry<T>(fn: () => Promise<T>, maxAttempts = 6): Promise<T> {
+  let delay = 1500;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      if (attempt < maxAttempts && msg.includes('git_branch_not_found')) {
+        await new Promise((r) => setTimeout(r, delay));
+        delay = Math.min(delay * 2, 10000);
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error('unreachable');
+}
+
 function teamParam(prefix = '?') {
   return VERCEL_TEAM_ID ? `${prefix}teamId=${VERCEL_TEAM_ID}` : '';
 }
@@ -204,18 +224,20 @@ export async function getProjectEnvKeys(): Promise<string[]> {
 }
 
 export async function addDomainToBranch(domain: string, branch: string): Promise<void> {
-  const res = await fetch(
-    `https://api.vercel.com/v10/projects/${VERCEL_PROJECT_ID}/domains${teamParam()}`,
-    {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify({ name: domain, gitBranch: branch }),
+  await withBranchRetry(async () => {
+    const res = await fetch(
+      `https://api.vercel.com/v10/projects/${VERCEL_PROJECT_ID}/domains${teamParam()}`,
+      {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ name: domain, gitBranch: branch }),
+      }
+    );
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Vercel API error: ${res.status} — ${err}`);
     }
-  );
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Vercel API error: ${res.status} — ${err}`);
-  }
+  });
 }
 
 export async function removeBranchDomains(branch: string): Promise<void> {
@@ -273,12 +295,14 @@ export async function setBranchEnvVars(
     gitBranch: branch,
   }));
 
-  const res = await fetch(
-    `https://api.vercel.com/v10/projects/${VERCEL_PROJECT_ID}/env${teamParam()}`,
-    { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) }
-  );
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Vercel API error: ${res.status} — ${err}`);
-  }
+  await withBranchRetry(async () => {
+    const res = await fetch(
+      `https://api.vercel.com/v10/projects/${VERCEL_PROJECT_ID}/env${teamParam()}`,
+      { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) }
+    );
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Vercel API error: ${res.status} — ${err}`);
+    }
+  });
 }
