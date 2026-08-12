@@ -49,13 +49,21 @@ export type CreatedPage = {
 
 /** Exchange client credentials for a bearer token. Call once per operation set. */
 export async function getToken({ clientId, clientSecret }: CmsCredentials): Promise<string> {
+  const body = new URLSearchParams({
+    grant_type: 'client_credentials',
+    client_id: clientId,
+    client_secret: clientSecret,
+  });
   const res = await fetch(`${CMS_API}/oauth/token`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ grant_type: 'client_credentials', client_id: clientId, client_secret: clientSecret }),
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
     cache: 'no-store',
   });
-  if (!res.ok) throw new Error(`Token request failed: ${res.status}`);
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`CMS token request failed: ${res.status}${detail ? ` — ${detail}` : ''}`);
+  }
   const { access_token } = await res.json();
   return access_token;
 }

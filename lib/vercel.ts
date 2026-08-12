@@ -149,17 +149,19 @@ export async function createDeployment(
     body.env = envOverrides;
   }
 
-  const res = await fetch(
-    `https://api.vercel.com/v13/deployments${teamParam()}`,
-    { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) }
-  );
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Vercel API error: ${res.status} — ${err}`);
-  }
-  const data = await res.json();
-  // v13 create returns `id`; normalize to `uid` to match the rest of the app
-  return { ...data, uid: data.uid ?? data.id };
+  return withBranchRetry(async () => {
+    const res = await fetch(
+      `https://api.vercel.com/v13/deployments${teamParam()}`,
+      { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) }
+    );
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Vercel API error: ${res.status} — ${err}`);
+    }
+    const data = await res.json();
+    // v13 create returns `id`; normalize to `uid` to match the rest of the app
+    return { ...data, uid: data.uid ?? data.id };
+  });
 }
 
 export async function deleteDeployment(id: string): Promise<void> {
