@@ -156,18 +156,6 @@ export default function DeployPage() {
       }
       completeStep();
 
-      startStep('Triggering deployment');
-      const deployRes = await fetch('/api/deployments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ branch: fullBranchName }),
-      });
-      if (!deployRes.ok) {
-        const deployData = await deployRes.json();
-        throw new Error(deployData.error ?? 'Failed to trigger deployment');
-      }
-      completeStep();
-
       router.push('/deployments');
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Unknown error');
