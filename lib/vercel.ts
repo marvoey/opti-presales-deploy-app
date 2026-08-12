@@ -1,7 +1,7 @@
 const VERCEL_TOKEN = process.env.OPTI_VERCEL_TOKEN!;
-const VERCEL_PROJECT_ID = process.env.VERCEL_PROJECT_ID!;
+const VERCEL_PROJECT_ID = process.env.VERCEL_DEMO_SITE_PROJECT_ID!;
 const VERCEL_DEMO_SITE_PROJECT_NAME = process.env.VERCEL_DEMO_SITE_PROJECT_NAME!;
-const VERCEL_TEAM_ID = process.env.VERCEL_TEAM_ID;
+const VERCEL_TEAM_ID = process.env.VERCEL_DEMO_SITE_TEAM_ID;
 const GITHUB_REPO_ID = process.env.GITHUB_REPO_ID!;
 
 function authHeaders() {

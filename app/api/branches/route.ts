@@ -11,8 +11,8 @@ function mask(value: string | undefined): string {
 export async function GET() {
   const diagnostics = {
     OPTI_VERCEL_TOKEN: mask(process.env.OPTI_VERCEL_TOKEN),
-    VERCEL_PROJECT_ID: process.env.VERCEL_PROJECT_ID || '(not set)',
-    VERCEL_TEAM_ID: process.env.VERCEL_TEAM_ID || '(not set)',
+    VERCEL_DEMO_SITE_PROJECT_ID: process.env.VERCEL_DEMO_SITE_PROJECT_ID || '(not set)',
+    VERCEL_DEMO_SITE_TEAM_ID: process.env.VERCEL_DEMO_SITE_TEAM_ID || '(not set)',
     VERCEL_DEMO_SITE_PROJECT_NAME: process.env.VERCEL_DEMO_SITE_PROJECT_NAME || '(not set)',
     GITHUB_REPO_ID: process.env.GITHUB_REPO_ID || '(not set)',
   };
