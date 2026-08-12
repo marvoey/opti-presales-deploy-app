@@ -252,13 +252,20 @@ export async function removeBranchDomains(branch: string): Promise<void> {
   const domains: string[] = (data.domains ?? [])
     .filter((d: { gitBranch?: string }) => d.gitBranch === branch)
     .map((d: { name: string }) => d.name);
+
   await Promise.all(
-    domains.map((name) =>
-      fetch(
-        `https://api.vercel.com/v9/projects/${VERCEL_PROJECT_ID}/domains/${name}${teamParam()}`,
+    domains.map(async (domain) => {
+      // Remove from project
+      await fetch(
+        `https://api.vercel.com/v9/projects/${VERCEL_PROJECT_ID}/domains/${domain}${teamParam()}`,
         { method: 'DELETE', headers: authHeaders() }
-      )
-    )
+      );
+      // Delete from Vercel account entirely
+      await fetch(
+        `https://api.vercel.com/v6/domains/${domain}${teamParam()}`,
+        { method: 'DELETE', headers: authHeaders() }
+      );
+    })
   );
 }
 
