@@ -20,25 +20,6 @@ type EnvKey = typeof ENV_KEYS[number];
 const BRANCH_PREFIX = 'opti-presales-auto-';
 const DEMO_BASE_DOMAIN = process.env.NEXT_PUBLIC_DEMO_BASE_DOMAIN ?? '';
 
-const TERMINAL_STATES = new Set(['READY', 'ERROR', 'CANCELED']);
-
-async function waitForBranchDeployment(branch: string, maxWaitMs = 600_000): Promise<string | null> {
-  const start = Date.now();
-  while (Date.now() - start < maxWaitMs) {
-    await new Promise((r) => setTimeout(r, 5000));
-    try {
-      const res = await fetch('/api/deployments');
-      if (!res.ok) continue;
-      const data = await res.json();
-      const deployments: Array<{ uid: string; state: string; meta?: { githubCommitRef?: string } }> = data.deployments ?? [];
-      const match = deployments.find((d) => d.meta?.githubCommitRef === branch);
-      if (match && TERMINAL_STATES.has(match.state)) return match.uid;
-    } catch {
-      // keep polling
-    }
-  }
-  return null;
-}
 
 function validateBranchName(name: string): string | null {
   if (!name) return 'Branch name is required.';
@@ -157,16 +138,6 @@ export default function DeployPage() {
         }
         completeStep();
       }
-
-      startStep('Waiting for initial build to finish');
-      const initialDeploymentId = await waitForBranchDeployment(fullBranchName);
-      completeStep();
-
-      startStep('Deleting initial deployment');
-      if (initialDeploymentId) {
-        await fetch(`/api/deployments/${initialDeploymentId}`, { method: 'DELETE' });
-      }
-      completeStep();
 
       startStep('Setting environment variables');
       const envOverrides: Record<string, string> = Object.fromEntries(
