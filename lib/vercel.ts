@@ -164,6 +164,40 @@ export async function createDeployment(
   });
 }
 
+export async function cancelDeployment(id: string): Promise<void> {
+  await fetch(
+    `https://api.vercel.com/v13/deployments/${id}/cancel${teamParam()}`,
+    { method: 'PATCH', headers: authHeaders() }
+  );
+  // best-effort — deployment may already be done or not cancelable
+}
+
+export async function cancelPendingDeploymentForBranch(branch: string): Promise<void> {
+  const CANCELABLE = new Set<string>(['QUEUED', 'INITIALIZING', 'BUILDING']);
+  // Poll up to 4 times — gives Vercel time to receive the GitHub push webhook
+  const delays = [2000, 2000, 3000, 3000];
+  for (const delay of delays) {
+    await new Promise((r) => setTimeout(r, delay));
+    try {
+      const qs = `projectId=${VERCEL_PROJECT_ID}&branch=${encodeURIComponent(branch)}&limit=5${teamParam('&')}`;
+      const res = await fetch(`https://api.vercel.com/v6/deployments?${qs}`, {
+        headers: authHeaders(),
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      const pending = (data.deployments ?? []).filter(
+        (d: VercelDeployment) => CANCELABLE.has(d.state)
+      );
+      if (pending.length > 0) {
+        await Promise.all(pending.map((d: VercelDeployment) => cancelDeployment(d.uid)));
+        return;
+      }
+    } catch {
+      // best-effort
+    }
+  }
+}
+
 export async function deleteDeployment(id: string): Promise<void> {
   const res = await fetch(
     `https://api.vercel.com/v13/deployments/${id}${teamParam()}`,

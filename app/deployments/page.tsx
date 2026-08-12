@@ -6,6 +6,7 @@ import StatusBadge from '@/components/StatusBadge';
 import type { VercelDeployment } from '@/lib/vercel';
 
 const DEMO_BASE_DOMAIN = process.env.NEXT_PUBLIC_DEMO_BASE_DOMAIN ?? '';
+const BUILDING_STATES = new Set(['BUILDING', 'QUEUED', 'INITIALIZING']);
 
 function siteDomain(branchRef: string | undefined): string | null {
   if (!DEMO_BASE_DOMAIN || !branchRef?.startsWith('opti-presales-auto-')) return null;
@@ -31,20 +32,37 @@ export default function DeploymentsPage() {
       const res = await fetch('/api/deployments');
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Failed to load deployments');
-      setDeployments(
-        (data.deployments as VercelDeployment[]).filter((d) =>
-          d.meta?.githubCommitRef?.startsWith('opti-presales-auto-')
-        )
+      const filtered = (data.deployments as VercelDeployment[]).filter((d) =>
+        d.meta?.githubCommitRef?.startsWith('opti-presales-auto-')
       );
+      setDeployments(filtered);
       setError(null);
+      return filtered;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
+      return null;
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    load().then((initial) => {
+      if (!initial) return;
+      if (!initial.some((d) => BUILDING_STATES.has(d.state))) return;
+
+      interval = setInterval(async () => {
+        const latest = await load();
+        if (!latest || !latest.some((d) => BUILDING_STATES.has(d.state))) {
+          if (interval) clearInterval(interval);
+        }
+      }, 1000);
+    });
+
+    return () => { if (interval) clearInterval(interval); };
+  }, [load]);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -85,13 +103,16 @@ export default function DeploymentsPage() {
       {deployments.length > 0 && (
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
           <ul className="divide-y divide-gray-100">
-            {deployments.map((d) => (
-              <li key={d.uid}>
-                <Link
-                  href={`/deployments/${d.uid}`}
-                  className="flex items-center justify-between gap-4 px-6 py-4 hover:bg-gray-50"
-                >
-                  <div className="min-w-0">
+            {deployments.map((d) => {
+              const domain = siteDomain(d.meta?.githubCommitRef);
+              return (
+                <li key={d.uid} className="relative flex items-center justify-between gap-4 px-6 py-4 hover:bg-gray-50">
+                  <Link
+                    href={`/deployments/${d.uid}`}
+                    className="absolute inset-0"
+                    aria-label={d.meta?.githubCommitRef ?? d.name}
+                  />
+                  <div className="relative min-w-0">
                     <div className="flex items-center gap-2">
                       <StatusBadge state={d.state} />
                       <span className="truncate font-mono text-xs text-gray-500">
@@ -104,26 +125,22 @@ export default function DeploymentsPage() {
                       </p>
                     )}
                   </div>
-                  <div className="shrink-0 text-right">
+                  <div className="relative shrink-0 text-right">
                     <p className="text-xs text-gray-400">{timeAgo(d.created)}</p>
-                    {(() => {
-                      const domain = siteDomain(d.meta?.githubCommitRef);
-                      return domain ? (
-                        <a
-                          href={`https://${domain}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="mt-1 inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200 hover:bg-blue-100"
-                        >
-                          Demo site ↗
-                        </a>
-                      ) : null;
-                    })()}
+                    {domain && d.state === 'READY' && (
+                      <a
+                        href={`https://${domain}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200 hover:bg-blue-100"
+                      >
+                        Demo site ↗
+                      </a>
+                    )}
                   </div>
-                </Link>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}

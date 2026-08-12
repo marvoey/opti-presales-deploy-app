@@ -54,6 +54,9 @@ export async function POST(request: Request) {
         hosts: [{ authority: hostname, type: 'Primary', preferredUrlScheme: 'https' }],
         usePreviewTokens: true,
         useApplicationSpecificAssets: true,
+        previewUrlFormats: {
+          'any': '{host}/preview?key={key}&ver={version}&loc={locale}&ctx={context}',
+        },
       });
     } catch (err) {
       await deletePage(token, key).catch(() => {});
