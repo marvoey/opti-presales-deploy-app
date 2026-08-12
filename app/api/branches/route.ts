@@ -1,5 +1,5 @@
 import { createBranch, deleteBranch } from '@/lib/github';
-import { listDemoBranches, deleteDeploymentsForBranch, deleteBranchEnvVars, addDomainToBranch, removeBranchDomains, cancelPendingDeploymentForBranch } from '@/lib/vercel';
+import { listDemoBranches, deleteDeploymentsForBranch, deleteBranchEnvVars, addDomainToBranch, removeBranchDomains } from '@/lib/vercel';
 import { getToken, deleteApplicationByHostname } from '@/lib/optimizely';
 
 function mask(value: string | undefined): string {
@@ -66,9 +66,6 @@ export async function POST(request: Request) {
       return Response.json({ error: 'name and sha are required' }, { status: 400 });
     }
     await createBranch(name, sha);
-    // Cancel the Vercel auto-deployment before env vars are set.
-    // Polls until the deployment appears in Vercel's queue, then cancels it.
-    await cancelPendingDeploymentForBranch(name).catch(() => {});
     if (domain) {
       await addDomainToBranch(domain, name);
     }
