@@ -10,6 +10,8 @@ export default function DashboardPage() {
   const [project, setProject] = useState<VercelProject | null>(null);
   const [repo, setRepo] = useState<GitHubRepo | null>(null);
   const [branches, setBranches] = useState<DemoBranch[]>([]);
+  const [branchDiagnostics, setBranchDiagnostics] = useState<Record<string, string> | null>(null);
+  const [branchRaw, setBranchRaw] = useState<unknown>(null);
   const [deletingBranch, setDeletingBranch] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,10 +30,12 @@ export default function DashboardPage() {
       ]);
       if (!projectRes.ok) throw new Error(projectData.error ?? 'Failed to load project');
       if (!repoRes.ok) throw new Error(repoData.error ?? 'Failed to load repo');
+      setBranchRaw(branchesData);
+      if (branchesData.diagnostics) setBranchDiagnostics(branchesData.diagnostics);
       if (!branchesRes.ok) throw new Error(branchesData.error ?? 'Failed to load branches');
       setProject(projectData.projects[0] ?? null);
       setRepo(repoData);
-      setBranches(branchesData);
+      setBranches(branchesData.branches ?? []);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -236,6 +240,35 @@ export default function DashboardPage() {
                 ))}
               </ul>
             </div>
+          )}
+          {branchRaw !== null && (
+            <details className="rounded-xl border border-gray-200 bg-white shadow-sm">
+              <summary className="cursor-pointer px-6 py-4 text-xs font-medium uppercase tracking-wide text-gray-400 hover:text-gray-600">
+                Branch fetch diagnostics
+              </summary>
+              <div className="border-t border-gray-100 px-6 py-4 space-y-4">
+                {branchDiagnostics && (
+                  <table className="w-full text-sm">
+                    <tbody className="divide-y divide-gray-100">
+                      {Object.entries(branchDiagnostics).map(([key, value]) => (
+                        <tr key={key}>
+                          <td className="py-2 pr-6 font-mono text-xs text-gray-400 whitespace-nowrap">{key}</td>
+                          <td className={`py-2 font-mono text-xs ${value.startsWith('(not set)') ? 'text-red-500' : 'text-gray-700'}`}>
+                            {value}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+                <div>
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">Raw response</p>
+                  <pre className="overflow-x-auto rounded-lg bg-gray-50 p-3 text-xs text-gray-700 whitespace-pre-wrap break-all">
+                    {JSON.stringify(branchRaw, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            </details>
           )}
         </div>
       )}

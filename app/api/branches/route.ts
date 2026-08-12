@@ -2,13 +2,27 @@ import { createBranch, deleteBranch } from '@/lib/github';
 import { listDemoBranches, deleteDeploymentsForBranch, deleteBranchEnvVars, addDomainToBranch, removeBranchDomains } from '@/lib/vercel';
 import { getToken, deleteApplicationByHostname } from '@/lib/optimizely';
 
+function mask(value: string | undefined): string {
+  if (!value) return '(not set)';
+  if (value.length <= 8) return '***';
+  return `${value.slice(0, 6)}...${value.slice(-4)}`;
+}
+
 export async function GET() {
+  const diagnostics = {
+    OPTI_VERCEL_TOKEN: mask(process.env.OPTI_VERCEL_TOKEN),
+    VERCEL_PROJECT_ID: process.env.VERCEL_PROJECT_ID || '(not set)',
+    VERCEL_TEAM_ID: process.env.VERCEL_TEAM_ID || '(not set)',
+    VERCEL_PROJECT_NAME: process.env.VERCEL_PROJECT_NAME || '(not set)',
+    GITHUB_REPO_ID: process.env.GITHUB_REPO_ID || '(not set)',
+  };
+
   try {
     const branches = await listDemoBranches();
-    return Response.json(branches);
+    return Response.json({ branches, diagnostics });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
-    return Response.json({ error: message }, { status: 500 });
+    return Response.json({ error: message, diagnostics }, { status: 500 });
   }
 }
 
