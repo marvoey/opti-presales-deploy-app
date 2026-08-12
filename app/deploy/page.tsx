@@ -74,14 +74,6 @@ export default function DeployPage() {
       })
       .catch(() => setLoadingTags(false));
 
-    fetch('/api/defaults')
-      .then((r) => r.json())
-      .then((defaults) => {
-        if (defaults && typeof defaults === 'object' && Object.keys(defaults).length > 0) {
-          setEnvValues((prev) => ({ ...prev, ...defaults }));
-        }
-      })
-      .catch(() => {});
   }, []);
 
   function handleBranchChange(value: string) {
