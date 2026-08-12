@@ -1,8 +1,8 @@
 const VERCEL_TOKEN = process.env.OPTI_VERCEL_TOKEN!;
 const VERCEL_PROJECT_ID = process.env.VERCEL_PROJECT_ID!;
-const VERCEL_PROJECT_NAME = process.env.VERCEL_PROJECT_NAME!;
+const VERCEL_DEMO_SITE_PROJECT_NAME = process.env.VERCEL_DEMO_SITE_PROJECT_NAME!;
 const VERCEL_TEAM_ID = process.env.VERCEL_TEAM_ID;
-const GITHUB_REPO_ID = process.env.GITHUB_REPO_ID!;
+// const GITHUB_REPO_ID = process.env.GITHUB_REPO_ID!;
 
 function authHeaders() {
   return {
@@ -137,7 +137,7 @@ export async function createDeployment(
   envOverrides: Record<string, string>
 ): Promise<VercelDeployment> {
   const body: Record<string, unknown> = {
-    name: VERCEL_PROJECT_NAME,
+    name: VERCEL_DEMO_SITE_PROJECT_NAME,
     gitSource: {
       type: 'github',
       repoId: parseInt(GITHUB_REPO_ID, 10),
