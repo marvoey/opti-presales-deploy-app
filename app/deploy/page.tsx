@@ -42,10 +42,10 @@ export default function DeployPage() {
   const [branchError, setBranchError] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState('');
   const [envValues, setEnvValues] = useState<Record<EnvKey, string>>({
-    OPTIMIZELY_CMS_URL: 'https://app-epsamoey0012f6ygp001.cms.optimizely.com/',
-    OPTIMIZELY_CMS_CLIENT_ID: '3128b1faa14a429894e494927042c442',
-    OPTIMIZELY_CMS_CLIENT_SECRET: 'zKjacBgbSY54ZlGbc3cMBTeT1xqVQIEigZXURUtcWC3XVcsF',
-    OPTIMIZELY_GRAPH_SINGLE_KEY: 'nDhEAZSjuNtxykWu4btEbHa2HcPPvyVN1QUjOB4mCBZefZTG',
+    OPTIMIZELY_CMS_URL: '',
+    OPTIMIZELY_CMS_CLIENT_ID: '',
+    OPTIMIZELY_CMS_CLIENT_SECRET: '',
+    OPTIMIZELY_GRAPH_SINGLE_KEY: '',
   });
   const [showEnv, setShowEnv] = useState(true);
 
